@@ -1,0 +1,7 @@
+{
+  "name": "Hệ Thống Quản Lý Lớp Học & Thi Đua Số - Lớp 6D8",
+  "description": "Ứng dụng quản lý lớp học, thi đua điểm số, điểm danh chuyên cần, vòng quay may mắn, đồng hồ đếm ngược và chia nhóm cho giáo viên và học sinh.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
