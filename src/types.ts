@@ -5,14 +5,16 @@ export type GroupId = '1' | '2' | '3' | '4';
 export type AttendanceStatus = 'present' | 'late' | 'excused' | 'unexcused';
 
 export interface Student {
-  id: string;
-  name: string;
-  gender: Gender;
-  group: GroupId;
-  role: string; // Lớp trưởng, Lớp phó học tập, Tổ trưởng, Học sinh...
-  points: number;
-  avatarIndex?: number;
-}
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyD38iwUCS5XKxx91RG5gSCdl6fTvkNVha0",
+  authDomain: "web--gvcn--ngophuong-vts.firebaseapp.com",
+  projectId: "web--gvcn--ngophuong-vts",
+  storageBucket: "web--gvcn--ngophuong-vts.firebasestorage.app",
+  messagingSenderId: "478785800864",
+  appId: "1:478785800864:web:b980edbd9547fcec3957c5",
+  measurementId: "G-L5WE24ZW4D"
+};
 
 export interface PointLog {
   id: string;
