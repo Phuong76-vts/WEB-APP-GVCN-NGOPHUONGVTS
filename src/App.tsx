@@ -157,12 +157,12 @@ export default function App() {
   };
 
   const handleResetToDefaultSample = () => {
-    if (confirm('Khôi phục danh sách mẫu chuẩn 20 học sinh lớp 6D8? Mọi dữ liệu sửa đổi sẽ được đặt lại.')) {
+    if (confirm('Khôi phục danh sách mẫu chuẩn 54 học sinh lớp 7C8? Mọi dữ liệu sửa đổi sẽ được đặt lại.')) {
       playClick(settings.soundEnabled);
       setStudents(INITIAL_STUDENTS);
       setSettings(DEFAULT_SETTINGS);
       setAttendance({});
-      alert('Đã khôi phục dữ liệu mẫu lớp 6D8 thành công!');
+      alert('Đã khôi phục dữ liệu mẫu lớp 7C8 thành công!');
     }
   };
 
