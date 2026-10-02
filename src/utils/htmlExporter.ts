@@ -1,8 +1,12 @@
 import { Student, ClassSettings } from '../types';
+import type { ClassroomBackup } from './storage';
 
-export function downloadStandaloneHtml(students: Student[], settings: ClassSettings) {
-  const studentsJson = JSON.stringify(students);
-  const settingsJson = JSON.stringify(settings);
+export function downloadStandaloneHtml(students: Student[], settings: ClassSettings, extra: Omit<ClassroomBackup, 'students' | 'settings'> = {}) {
+  const jsonForScript = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
+  const studentsJson = jsonForScript(students);
+  const settingsJson = jsonForScript(settings);
+  const extraJson = jsonForScript(extra);
+  const exportKeyJson = JSON.stringify('classroom_html_v3_' + Date.now() + '_' + Math.random().toString(36).slice(2));
 
   const htmlContent = `<!DOCTYPE html>
 <html lang="vi">
@@ -43,7 +47,7 @@ export function downloadStandaloneHtml(students: Student[], settings: ClassSetti
         <div>
           <div class="flex items-center gap-2">
             <h1 class="text-xl sm:text-2xl font-black heading-font tracking-wide text-white" id="header-class-name">${settings.className} - ${settings.schoolName}</h1>
-            <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-slate-900 shadow">NĂM HỌC 2025-2026</span>
+            <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-400 text-slate-900 shadow">NĂM HỌC 2026 - 2027</span>
           </div>
           <p class="text-xs sm:text-sm text-indigo-100 flex items-center gap-2">
             <span><i class="fa-solid fa-chalkboard-user text-amber-300"></i> GVCN: <b class="text-white" id="header-teacher-name">${settings.teacherName}</b></span>
@@ -77,7 +81,7 @@ export function downloadStandaloneHtml(students: Student[], settings: ClassSetti
         <button onclick="switchTab('class')" id="tab-btn-class" class="tab-btn flex items-center gap-2 px-4 py-2.5 rounded-t-xl transition border-b-4 border-amber-400 bg-white/15 text-white">
           <i class="fa-solid fa-users text-amber-300"></i>
           <span>1. LỚP HỌC & GHI ĐIỂM</span>
-          <span id="badge-total-students" class="ml-1 px-2 py-0.5 rounded-full text-xs bg-white text-indigo-800 font-black">20</span>
+          <span id="badge-total-students" class="ml-1 px-2 py-0.5 rounded-full text-xs bg-white text-indigo-800 font-black">${students.length}</span>
         </button>
         <button onclick="switchTab('leaderboard')" id="tab-btn-leaderboard" class="tab-btn flex items-center gap-2 px-4 py-2.5 rounded-t-xl transition border-b-4 border-transparent text-indigo-100 hover:bg-white/10">
           <i class="fa-solid fa-trophy text-yellow-300"></i>
@@ -90,6 +94,10 @@ export function downloadStandaloneHtml(students: Student[], settings: ClassSetti
         <button onclick="switchTab('utilities')" id="tab-btn-utilities" class="tab-btn flex items-center gap-2 px-4 py-2.5 rounded-t-xl transition border-b-4 border-transparent text-indigo-100 hover:bg-white/10">
           <i class="fa-solid fa-wand-magic-sparkles text-pink-300"></i>
           <span>4. BỘ TIỆN ÍCH TƯƠNG TÁC</span>
+        </button>
+        <button onclick="switchTab('rules')" id="tab-btn-rules" class="tab-btn flex items-center gap-2 px-4 py-2.5 rounded-t-xl transition border-b-4 border-transparent text-indigo-100 hover:bg-white/10">
+          <i class="fa-solid fa-scale-balanced text-sky-300"></i>
+          <span>5. NỘI QUY & BAREM (RULES)</span>
         </button>
       </nav>
     </div>
@@ -105,11 +113,11 @@ export function downloadStandaloneHtml(students: Student[], settings: ClassSetti
         <!-- Group Filter Buttons -->
         <div class="flex flex-wrap items-center gap-2" id="group-filter-container">
           <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mr-1"><i class="fa-solid fa-filter"></i> Lọc Tổ:</span>
-          <button onclick="filterGroup('all')" class="group-filter-btn active px-3.5 py-1.5 rounded-xl text-sm font-bold transition bg-indigo-600 text-white shadow-sm" data-group="all">Tất cả (20)</button>
-          <button onclick="filterGroup('1')" class="group-filter-btn px-3.5 py-1.5 rounded-xl text-sm font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200" data-group="1">Tổ 1 (5)</button>
-          <button onclick="filterGroup('2')" class="group-filter-btn px-3.5 py-1.5 rounded-xl text-sm font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200" data-group="2">Tổ 2 (5)</button>
-          <button onclick="filterGroup('3')" class="group-filter-btn px-3.5 py-1.5 rounded-xl text-sm font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200" data-group="3">Tổ 3 (5)</button>
-          <button onclick="filterGroup('4')" class="group-filter-btn px-3.5 py-1.5 rounded-xl text-sm font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200" data-group="4">Tổ 4 (5)</button>
+          <button onclick="filterGroup('all')" class="group-filter-btn active px-3.5 py-1.5 rounded-xl text-sm font-bold transition bg-indigo-600 text-white shadow-sm" data-group="all">Tất cả (${students.length})</button>
+          <button onclick="filterGroup('1')" class="group-filter-btn px-3.5 py-1.5 rounded-xl text-sm font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200" data-group="1">Tổ 1 (${students.filter(s => s.group === '1').length})</button>
+          <button onclick="filterGroup('2')" class="group-filter-btn px-3.5 py-1.5 rounded-xl text-sm font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200" data-group="2">Tổ 2 (${students.filter(s => s.group === '2').length})</button>
+          <button onclick="filterGroup('3')" class="group-filter-btn px-3.5 py-1.5 rounded-xl text-sm font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200" data-group="3">Tổ 3 (${students.filter(s => s.group === '3').length})</button>
+          <button onclick="filterGroup('4')" class="group-filter-btn px-3.5 py-1.5 rounded-xl text-sm font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200" data-group="4">Tổ 4 (${students.filter(s => s.group === '4').length})</button>
         </div>
 
         <!-- Search input -->
@@ -148,7 +156,7 @@ export function downloadStandaloneHtml(students: Student[], settings: ClassSetti
         
         <div class="text-center relative z-10 mb-6">
           <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 text-sm font-black mb-2">
-            <i class="fa-solid fa-crown text-amber-400"></i> VINH DANH NGÔI SAO LỚP 6D8
+            <i class="fa-solid fa-crown text-amber-400"></i> VINH DANH NGÔI SAO ${settings.className}
           </div>
           <h2 class="text-2xl sm:text-3xl font-black heading-font tracking-wide">BỤC VINH DANH TOP 3 XUẤT SẮC NHẤT</h2>
           <p class="text-xs sm:text-sm text-indigo-200 mt-1">Cập nhật điểm thi đua và danh hiệu liên tục theo thời gian thực</p>
@@ -242,7 +250,7 @@ export function downloadStandaloneHtml(students: Student[], settings: ClassSetti
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
           <div>
             <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <i class="fa-solid fa-list-ol text-indigo-600"></i> BẢNG TỔNG SẮP ĐIỂM TOÀN BỘ LỚP 6D8
+              <i class="fa-solid fa-list-ol text-indigo-600"></i> BẢNG TỔNG SẮP ĐIỂM TOÀN BỘ ${settings.className}
             </h3>
             <p class="text-xs text-slate-500">Xếp hạng từ cao xuống thấp theo tổng điểm thi đua</p>
           </div>
@@ -503,6 +511,185 @@ export function downloadStandaloneHtml(students: Student[], settings: ClassSetti
 
     </section>
 
+    <!-- TAB 5: NỘI QUY & BAREM THI ĐUA (RULES) -->
+    <section id="tab-rules" class="tab-content hidden space-y-6">
+      <!-- Rules Header Card -->
+      <div class="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          <div class="space-y-2">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/20 border border-amber-300/40 text-amber-300 text-xs font-black">
+              <i class="fa-solid fa-scale-balanced"></i> QUY CHẾ CHUẨN MỰC SƯ PHẠM
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black tracking-wide">
+              QUY CHẾ THI ĐUA & NỘI QUY LỚP ${settings.className}
+            </h2>
+            <p class="text-xs sm:text-sm text-indigo-100 max-w-2xl leading-relaxed">
+              Trường ${settings.schoolName} • Năm học ${settings.academicYear} • GVCN: ${settings.teacherName}
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2.5">
+            <button onclick="window.print()" class="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white font-bold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer backdrop-blur-xs">
+              <i class="fa-solid fa-print text-sky-300"></i> In Bảng Nội Quy
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-white/15 flex flex-wrap items-center justify-between gap-3 text-xs text-indigo-100">
+          <div class="flex items-center gap-2 font-semibold">
+            <i class="fa-solid fa-heart text-rose-400"></i>
+            <span>Thực hiện nghiêm túc <b>5 Điều Bác Hồ Dạy</b>: Yêu Tổ quốc, chăm học, kỷ luật, vệ sinh và trung thực.</span>
+          </div>
+          <div>GVCN: <b class="text-white">${settings.teacherName}</b></div>
+        </div>
+      </div>
+
+      <!-- 5 Điều Bác Hồ Dạy Card -->
+      <div class="bg-gradient-to-r from-amber-500 to-rose-600 rounded-2xl p-5 text-white shadow-md">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-xl bg-white text-rose-600 flex items-center justify-center font-black text-lg shadow-sm">
+            <i class="fa-solid fa-star"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-black uppercase tracking-wide">5 ĐIỀU BÁC HỒ DẠY THIẾU NIÊN, NHI ĐỒNG</h3>
+            <p class="text-xs text-amber-100">Kim chỉ nam cho mọi hoạt động rèn luyện của học sinh lớp ${settings.className}</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-5 gap-2.5 text-xs text-slate-900 font-bold">
+          <div class="bg-white/90 p-3 rounded-xl shadow-xs">
+            <span class="text-rose-600 block text-xs font-black mb-1">ĐIỀU 1</span>
+            Yêu Tổ quốc, yêu đồng bào
+          </div>
+          <div class="bg-white/90 p-3 rounded-xl shadow-xs">
+            <span class="text-rose-600 block text-xs font-black mb-1">ĐIỀU 2</span>
+            Học tập tốt, lao động tốt
+          </div>
+          <div class="bg-white/90 p-3 rounded-xl shadow-xs">
+            <span class="text-rose-600 block text-xs font-black mb-1">ĐIỀU 3</span>
+            Đoàn kết tốt, kỷ luật tốt
+          </div>
+          <div class="bg-white/90 p-3 rounded-xl shadow-xs">
+            <span class="text-rose-600 block text-xs font-black mb-1">ĐIỀU 4</span>
+            Giữ gìn vệ sinh thật tốt
+          </div>
+          <div class="bg-white/90 p-3 rounded-xl shadow-xs">
+            <span class="text-rose-600 block text-xs font-black mb-1">ĐIỀU 5</span>
+            Khiêm tốn, thật thà, dũng cảm
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 Columns Barem Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Barem Điểm Cộng -->
+        <div class="bg-white rounded-2xl p-5 border border-emerald-200 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="font-black text-emerald-800 flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-award text-emerald-600"></i> BAREM KHEN THƯỞNG (+)
+            </h3>
+            <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">Tích điểm</span>
+          </div>
+          <div class="space-y-2 text-xs">
+            <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-between">
+              <div>
+                <b class="text-slate-800 block">Đạt Điểm 9 - 10</b>
+                <span class="text-slate-500 text-[11px]">Kiểm tra miệng, 15 phút, giữa kỳ, cuối kỳ</span>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-black shrink-0">+2đ</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-between">
+              <div>
+                <b class="text-slate-800 block">Hăng hái phát biểu xây dựng bài</b>
+                <span class="text-slate-500 text-[11px]">Được giáo viên bộ môn khen ngợi</span>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-black shrink-0">+1đ</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-between">
+              <div>
+                <b class="text-slate-800 block">Làm việc tốt, nhặt được của rơi</b>
+                <span class="text-slate-500 text-[11px]">Giúp đỡ bạn tiến bộ trong học tập</span>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-black shrink-0">+2đ</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-between">
+              <div>
+                <b class="text-slate-800 block">Đạt giải phong trào / TDTT</b>
+                <span class="text-slate-500 text-[11px]">Văn nghệ, thể thao, thi đua cấp trường</span>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-black shrink-0">+5đ</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barem Điểm Trừ -->
+        <div class="bg-white rounded-2xl p-5 border border-rose-200 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="font-black text-rose-800 flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-triangle-exclamation text-rose-600"></i> BAREM NHẮC NHỞ (-)
+            </h3>
+            <span class="text-[10px] bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded-full">Trừ điểm</span>
+          </div>
+          <div class="space-y-2 text-xs">
+            <div class="p-2.5 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-between">
+              <div>
+                <b class="text-slate-800 block">Đi học muộn</b>
+                <span class="text-slate-500 text-[11px]">Đến sau tiếng trống truy bài hoặc trống vào tiết</span>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-black shrink-0">-2đ</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-between">
+              <div>
+                <b class="text-slate-800 block">Không làm bài tập về nhà</b>
+                <span class="text-slate-500 text-[11px]">Thiếu vở ghi hoặc bài tập theo yêu cầu bộ môn</span>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-black shrink-0">-2đ</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-between">
+              <div>
+                <b class="text-slate-800 block">Nói chuyện, mất trật tự</b>
+                <span class="text-slate-500 text-[11px]">Bị thầy cô nhắc nhở hoặc ghi sổ đầu bài</span>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-black shrink-0">-2đ</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-between">
+              <div>
+                <b class="text-slate-800 block">Sai quy định đồng phục / Khăn quàng</b>
+                <span class="text-slate-500 text-[11px]">Không đeo khăn quàng, quên thẻ hoặc phù hiệu</span>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-black shrink-0">-1đ</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quy định Ban Cán Sự -->
+        <div class="bg-white rounded-2xl p-5 border border-amber-200 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="font-black text-amber-900 flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-user-shield text-amber-600"></i> PHÂN CÔNG BAN CÁN SỰ
+            </h3>
+            <span class="text-[10px] bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full">Trách nhiệm</span>
+          </div>
+          <div class="space-y-2 text-xs">
+            <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-100">
+              <b class="text-slate-800 block">Lớp Trưởng: Quản lý chung</b>
+              <p class="text-slate-600 text-[11px] mt-0.5">Bao quát nề nếp toàn lớp, điều hành 15 phút đầu giờ và tiết sinh hoạt.</p>
+            </div>
+            <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-100">
+              <b class="text-slate-800 block">Lớp Phó Học Tập & Lao Động</b>
+              <p class="text-slate-600 text-[11px] mt-0.5">Kiểm tra bài tập đầu giờ, đôn đốc trực nhật lớp sạch sẽ trước 7h00 sáng.</p>
+            </div>
+            <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-100">
+              <b class="text-slate-800 block">4 Tổ Trưởng: Theo dõi thi đua tổ</b>
+              <p class="text-slate-600 text-[11px] mt-0.5">Theo dõi chấm điểm học sinh tổ mình hàng ngày, báo cáo tổng hợp thứ 6.</p>
+            </div>
+            <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-100">
+              <b class="text-slate-800 block">GVCN: Thẩm định & Khen thưởng</b>
+              <p class="text-slate-600 text-[11px] mt-0.5">Quyết định tuyên dương Bảng Vàng và trao thưởng hàng tuần / tháng.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- FOOTER -->
@@ -643,7 +830,7 @@ export function downloadStandaloneHtml(students: Student[], settings: ClassSetti
               <i class="fa-solid fa-rotate-left text-amber-600"></i> Đặt lại điểm về 0 (Đầu tuần mới)
             </button>
             <button onclick="resetToDefaultSample()" class="p-3 rounded-xl border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs font-bold transition flex items-center justify-center gap-2">
-              <i class="fa-solid fa-arrows-rotate text-blue-600"></i> Nạp lại mẫu 20 HS lớp 6D8
+              <i class="fa-solid fa-arrows-rotate text-blue-600"></i> Nạp lại mẫu 20 HS lớp 7C8
             </button>
           </div>
 
@@ -676,32 +863,72 @@ export function downloadStandaloneHtml(students: Student[], settings: ClassSetti
     // --- 1. DATA STATE & STORAGE ---
     let students = ${studentsJson};
     let settings = ${settingsJson};
-    let attendance = {};
-    let pointLogs = [];
+    const initialExtra = ${extraJson};
+    let attendance = initialExtra.attendance || {};
+    let pointLogs = initialExtra.pointLogs || [];
+    let rules = initialExtra.rules || [];
+    let monthlyStore = initialExtra.monthlyStore || null;
+    const storageKey = ${exportKeyJson};
+    const initialSnapshot = JSON.stringify({students, settings, attendance, pointLogs, rules, monthlyStore});
+    let storageBlocked = false;
     let currentActiveStudent = null;
     let selectedGroupFilter = 'all';
     let searchQuery = '';
     let soundEnabled = true;
 
-    // Load from localStorage if present
+    function showStorageError(message) {
+      let banner = document.getElementById('storage-error');
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'storage-error';
+        banner.style.cssText = 'position:sticky;top:0;z-index:9999;background:#fee2e2;color:#991b1b;padding:16px;font-weight:bold';
+        document.body.prepend(banner);
+      }
+      banner.textContent = message;
+    }
+    function validSnapshot(data) {
+      return data && Array.isArray(data.students) && data.students.every(s => s && typeof s.id === 'string' && typeof s.name === 'string' && Number.isFinite(s.points));
+    }
+    function useSnapshot(data) {
+      students = data.students;
+      settings = data.settings || settings;
+      attendance = data.attendance || {};
+      pointLogs = data.pointLogs || [];
+      rules = data.rules || [];
+      monthlyStore = data.monthlyStore || null;
+    }
     try {
-      const sStudents = localStorage.getItem('classroom_students_v1');
-      if (sStudents) students = JSON.parse(sStudents);
-      const sSettings = localStorage.getItem('classroom_settings_v1');
-      if (sSettings) settings = JSON.parse(sSettings);
-      const sAtt = localStorage.getItem('classroom_attendance_v1');
-      if (sAtt) attendance = JSON.parse(sAtt);
-      const sLogs = localStorage.getItem('classroom_logs_v1');
-      if (sLogs) pointLogs = JSON.parse(sLogs);
+      const raw = localStorage.getItem(storageKey);
+      if (raw !== null) {
+        const data = JSON.parse(raw);
+        if (!validSnapshot(data)) throw new Error('Invalid saved data');
+        useSnapshot(data);
+      }
     } catch (e) {
-      console.log('Init state with defaults');
+      storageBlocked = true;
+      showStorageError('Không đọc được dữ liệu đã lưu. Dữ liệu gốc được giữ nguyên; hãy khôi phục từ bản sao lưu JSON.');
     }
 
+    function snapshot() {
+      if (monthlyStore && monthlyStore.months[monthlyStore.activeMonthId]) {
+        const month = monthlyStore.months[monthlyStore.activeMonthId];
+        if (!month.isArchived) {
+          month.studentScores = Object.fromEntries(students.map(s => [s.id, s.points]));
+          month.pointLogs = pointLogs;
+        }
+      }
+      return {version: '3.0', students, settings, attendance, pointLogs, rules, monthlyStore, exportedAt: new Date().toISOString()};
+    }
     function saveState() {
-      localStorage.setItem('classroom_students_v1', JSON.stringify(students));
-      localStorage.setItem('classroom_settings_v1', JSON.stringify(settings));
-      localStorage.setItem('classroom_attendance_v1', JSON.stringify(attendance));
-      localStorage.setItem('classroom_logs_v1', JSON.stringify(pointLogs));
+      try {
+        if (storageBlocked) throw new Error('Protected original data');
+        localStorage.setItem(storageKey, JSON.stringify(snapshot()));
+        document.getElementById('storage-error')?.remove();
+        return true;
+      } catch (e) {
+        showStorageError('Chưa lưu được dữ liệu. Hãy sao lưu JSON trước khi đóng trang.');
+        return false;
+      }
     }
 
     // --- 2. WEB AUDIO API SYNTHESIZER ---
@@ -908,6 +1135,7 @@ export function downloadStandaloneHtml(students: Student[], settings: ClassSetti
     }
 
     function modifyStudentPoints(studentId, delta, reason) {
+      if (monthlyStore?.months[monthlyStore.activeMonthId]?.isArchived) { alert('Tháng đã chốt. Hãy mở lại tháng trên bản web rồi xuất HTML mới để chỉnh sửa.'); return; }
       const st = students.find(s => s.id === studentId);
       if (!st) return;
       st.points += delta;
@@ -1328,6 +1556,7 @@ export function downloadStandaloneHtml(students: Student[], settings: ClassSetti
     }
 
     function clearLogs() {
+      if (monthlyStore?.months[monthlyStore.activeMonthId]?.isArchived) { alert('Tháng đã chốt. Hãy mở lại tháng trên bản web rồi xuất HTML mới để chỉnh sửa.'); return; }
       pointLogs = [];
       saveState();
       renderLogs();
@@ -1342,18 +1571,18 @@ export function downloadStandaloneHtml(students: Student[], settings: ClassSetti
     }
 
     function saveClassSettings() {
-      settings.className = document.getElementById('settings-classname').value.trim() || 'LỚP 6D8';
+      settings.className = document.getElementById('settings-classname').value.trim() || 'LỚP 7C8';
       settings.schoolName = document.getElementById('settings-schoolname').value.trim() || 'THCS VÕ THỊ SÁU';
       settings.teacherName = document.getElementById('settings-teachername').value.trim() || 'Cô Ngô Thị Phương';
 
       document.getElementById('header-class-name').innerText = settings.className + ' - ' + settings.schoolName;
       document.getElementById('header-teacher-name').innerText = settings.teacherName;
 
-      saveState();
-      alert('Đã lưu thông tin lớp học thành công!');
+      if (saveState()) alert('Đã lưu thông tin lớp học thành công!');
     }
 
     function resetWeekPoints() {
+      if (monthlyStore?.months[monthlyStore.activeMonthId]?.isArchived) { alert('Tháng đã chốt. Hãy mở lại tháng trên bản web rồi xuất HTML mới để chỉnh sửa.'); return; }
       if (confirm('Bạn có chắc chắn muốn đặt lại toàn bộ điểm thi đua của cả lớp về 0 để bắt đầu tuần mới?')) {
         students.forEach(s => s.points = 0);
         saveState();
@@ -1364,19 +1593,20 @@ export function downloadStandaloneHtml(students: Student[], settings: ClassSetti
     }
 
     function resetToDefaultSample() {
-      if (confirm('Khôi phục danh sách mẫu chuẩn 20 học sinh lớp 6D8?')) {
-        localStorage.clear();
-        location.reload();
+      if (confirm('Khôi phục dữ liệu ban đầu khi xuất file HTML này?')) {
+        useSnapshot(JSON.parse(initialSnapshot));
+        storageBlocked = false;
+        if (saveState()) location.reload();
       }
     }
 
     function backupToJson() {
-      const data = { students, settings, attendance, pointLogs, exportedAt: new Date().toISOString() };
+      const data = snapshot();
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'Backup_Lop6D8_' + new Date().toISOString().slice(0, 10) + '.json';
+      a.download = 'Backup_Lop7C8_' + new Date().toISOString().slice(0, 10) + '.json';
       a.click();
     }
 
@@ -1387,13 +1617,10 @@ export function downloadStandaloneHtml(students: Student[], settings: ClassSetti
       reader.onload = function(e) {
         try {
           const parsed = JSON.parse(e.target.result);
-          if (parsed.students && Array.isArray(parsed.students)) {
-            students = parsed.students;
-            if (parsed.settings) settings = parsed.settings;
-            if (parsed.attendance) attendance = parsed.attendance;
-            if (parsed.pointLogs) pointLogs = parsed.pointLogs;
-            saveState();
-            location.reload();
+          if (validSnapshot(parsed)) {
+            useSnapshot(parsed);
+            storageBlocked = false;
+            if (saveState()) location.reload();
           } else {
             alert('File JSON không hợp lệ!');
           }
@@ -1405,6 +1632,7 @@ export function downloadStandaloneHtml(students: Student[], settings: ClassSetti
     }
 
     function bulkImportStudents() {
+      if (monthlyStore?.months[monthlyStore.activeMonthId]?.isArchived) { alert('Tháng đã chốt. Hãy mở lại tháng trên bản web rồi xuất HTML mới để chỉnh sửa.'); return; }
       const raw = document.getElementById('bulk-import-text').value.trim();
       if (!raw) return;
       const lines = raw.split('\\n').map(l => l.trim()).filter(l => l.length > 0);

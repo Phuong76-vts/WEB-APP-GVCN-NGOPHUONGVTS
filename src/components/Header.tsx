@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ClassSettings } from '../types';
+import { ClassSettings, UserRole, ROLE_DEFINITIONS, ActiveOfficer } from '../types';
 import { 
   Users, 
   Trophy, 
@@ -11,19 +11,33 @@ import {
   Minimize2, 
   Settings, 
   Download, 
-  GraduationCap
+  GraduationCap,
+  Crown,
+  Star,
+  Eye,
+  ShieldCheck,
+  BookOpen,
+  LogOut,
+  CalendarDays
 } from 'lucide-react';
 import { playClick } from '../utils/audio';
 
 interface HeaderProps {
   settings: ClassSettings;
-  activeTab: 'classroom' | 'leaderboard' | 'attendance' | 'utilities';
-  onTabChange: (tab: 'classroom' | 'leaderboard' | 'attendance' | 'utilities') => void;
+  activeTab: 'classroom' | 'leaderboard' | 'attendance' | 'utilities' | 'rules';
+  onTabChange: (tab: 'classroom' | 'leaderboard' | 'attendance' | 'utilities' | 'rules') => void;
   totalStudents: number;
+  totalRules?: number;
   soundEnabled: boolean;
   onToggleSound: () => void;
   onOpenSettings: () => void;
   onExportStandaloneHtml: () => void;
+  currentRole: UserRole;
+  onOpenLogin: () => void;
+  onLogout?: () => void;
+  activeOfficer?: ActiveOfficer | null;
+  currentMonthName?: string;
+  onOpenMonthArchive?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -31,10 +45,17 @@ export const Header: React.FC<HeaderProps> = ({
   activeTab,
   onTabChange,
   totalStudents,
+  totalRules,
   soundEnabled,
   onToggleSound,
   onOpenSettings,
-  onExportStandaloneHtml
+  onExportStandaloneHtml,
+  currentRole,
+  onOpenLogin,
+  onLogout,
+  activeOfficer,
+  currentMonthName,
+  onOpenMonthArchive
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [timeStr, setTimeStr] = useState('');
@@ -81,6 +102,19 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-400 text-slate-900 shadow-xs">
                   NĂM HỌC {settings.academicYear}
                 </span>
+                {currentMonthName && (
+                  <button
+                    onClick={() => {
+                      playClick(soundEnabled);
+                      if (onOpenMonthArchive) onOpenMonthArchive();
+                    }}
+                    className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-white/20 hover:bg-white/30 text-amber-200 border border-white/20 shadow-xs flex items-center gap-1 transition cursor-pointer"
+                    title="Nhấn để xem kho lưu trữ và báo cáo thi đua theo tháng"
+                  >
+                    <CalendarDays className="w-3.5 h-3.5 text-amber-300" />
+                    <span>{currentMonthName}</span>
+                  </button>
+                )}
               </div>
               <div className="text-xs sm:text-sm text-indigo-100 flex items-center gap-2.5 mt-0.5">
                 <span className="flex items-center gap-1.5 font-medium">
@@ -98,6 +132,52 @@ export const Header: React.FC<HeaderProps> = ({
           {/* ACTION CONTROLS */}
           <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
             
+            {/* ROLE BADGE & AUTH SWITCH */}
+            <button
+              onClick={() => {
+                playClick(soundEnabled);
+                onOpenLogin();
+              }}
+              title="Nhấp để đăng nhập hoặc chuyển đổi vai trò (GVCN / Ban cán sự / Chế độ xem)"
+              className={`px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-black transition flex items-center gap-1.5 cursor-pointer shadow-xs ${
+                currentRole === 'gvcn'
+                  ? 'bg-amber-400 hover:bg-amber-300 text-slate-950 border-amber-300 ring-2 ring-amber-300/40'
+                  : currentRole === 'bcs'
+                  ? 'bg-emerald-500 hover:bg-emerald-400 text-white border-emerald-400 ring-2 ring-emerald-300/40'
+                  : 'bg-white/15 hover:bg-white/25 text-white border-white/20'
+              }`}
+            >
+              {currentRole === 'gvcn' && <Crown className="w-4 h-4 text-slate-950" />}
+              {currentRole === 'bcs' && <Star className="w-4 h-4 text-amber-200 fill-amber-200" />}
+              {currentRole === 'viewer' && <Eye className="w-4 h-4 text-slate-300" />}
+
+              <span>
+                {currentRole === 'gvcn' 
+                  ? 'GVCN: Toàn quyền' 
+                  : currentRole === 'bcs' 
+                  ? (activeOfficer ? `${activeOfficer.roleTitle}: ${activeOfficer.name.split(' ').pop()}` : 'Ban Cán Sự: Cho điểm') 
+                  : 'Chế độ xem'}
+              </span>
+              <span className="text-[10px] opacity-75 underline font-normal hidden sm:inline ml-0.5">
+                (Đổi)
+              </span>
+            </button>
+
+            {/* LOGOUT BUTTON */}
+            {onLogout && (
+              <button
+                onClick={() => {
+                  playClick(soundEnabled);
+                  onLogout();
+                }}
+                title="Đăng xuất khỏi hệ thống và khóa màn hình đăng nhập"
+                className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-rose-600/90 text-white border border-white/20 hover:border-rose-400 text-xs sm:text-sm font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <LogOut className="w-3.5 h-3.5 text-rose-300" />
+                <span className="hidden md:inline">Đăng xuất</span>
+              </button>
+            )}
+
             {/* Standalone HTML download */}
             <button
               onClick={() => {
@@ -229,6 +309,26 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Wand2 className="w-4 h-4 text-pink-300" />
             <span>4. BỘ TIỆN ÍCH TƯƠNG TÁC</span>
+          </button>
+
+          <button
+            onClick={() => {
+              playClick(soundEnabled);
+              onTabChange('rules');
+            }}
+            className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-t-xl transition border-b-4 cursor-pointer ${
+              activeTab === 'rules'
+                ? 'border-amber-400 bg-white/15 text-white shadow-xs'
+                : 'border-transparent text-indigo-100 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            <BookOpen className="w-4 h-4 text-sky-300" />
+            <span>5. NỘI QUY & BAREM (RULES)</span>
+            {totalRules !== undefined && (
+              <span className="ml-1 px-2 py-0.5 rounded-full text-xs bg-amber-400 text-slate-950 font-black shadow-xs">
+                {totalRules}
+              </span>
+            )}
           </button>
 
         </nav>

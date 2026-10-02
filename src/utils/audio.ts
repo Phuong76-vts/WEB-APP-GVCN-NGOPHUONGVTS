@@ -154,6 +154,10 @@ export function playTimerAlert(soundEnabled: boolean = true) {
   });
 }
 
+export function playSuccess(soundEnabled: boolean = true) {
+  playTingTing(soundEnabled);
+}
+
 export function playClick(soundEnabled: boolean = true) {
   if (!soundEnabled) return;
   const ctx = getAudioContext();

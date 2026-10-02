@@ -19,13 +19,17 @@ interface LeaderboardTabProps {
   settings: ClassSettings;
   onOpenScoreModal: (student: Student) => void;
   soundEnabled: boolean;
+  currentMonthName?: string;
+  isArchived?: boolean;
 }
 
 export const LeaderboardTab: React.FC<LeaderboardTabProps> = ({
   students,
   settings,
   onOpenScoreModal,
-  soundEnabled
+  soundEnabled,
+  currentMonthName,
+  isArchived
 }) => {
   const sortedStudents = [...students].sort((a, b) => b.points - a.points);
   const top1 = sortedStudents[0];
@@ -76,10 +80,11 @@ export const LeaderboardTab: React.FC<LeaderboardTabProps> = ({
         <div className="text-center relative z-10 mb-6">
           <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 text-xs sm:text-sm font-black mb-2 shadow-xs">
             <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>VINH DANH NGÔI SAO LỚP 6D8</span>
+            <span>VINH DANH NGÔI SAO {settings.className}</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-black font-['Nunito',sans-serif] tracking-wide text-white">
-            BỤC VINH DANH TOP 3 XUẤT SẮC NHẤT
+            {currentMonthName ? `TOP 3 XUẤT SẮC - ${currentMonthName.toUpperCase()}` : 'BỤC VINH DANH TOP 3 XUẤT SẮC NHẤT'}
+            {isArchived ? ' (ĐÃ CHỐT)' : ''}
           </h2>
           <p className="text-xs sm:text-sm text-indigo-200 mt-1">
             Ghi nhận những nỗ lực học tập và rèn luyện thi đua nổi bật nhất
@@ -283,7 +288,7 @@ export const LeaderboardTab: React.FC<LeaderboardTabProps> = ({
           <div>
             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
               <Trophy className="w-5 h-5 text-indigo-600" />
-              <span>BẢNG TỔNG SẮP THI ĐUA TOÀN BỘ LỚP {settings.className}</span>
+              <span>BẢNG TỔNG SẮP THI ĐUA TOÀN BỘ LỚP {settings.className} {currentMonthName ? `• ${currentMonthName}` : ''}</span>
             </h3>
             <p className="text-xs text-slate-500">
               Danh sách xếp hạng thi đua được sắp xếp tự động theo điểm số

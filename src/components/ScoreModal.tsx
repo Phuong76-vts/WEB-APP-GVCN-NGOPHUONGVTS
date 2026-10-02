@@ -1,33 +1,66 @@
 import React, { useState } from 'react';
-import { Student, REWARD_PRESETS, PENALTY_PRESETS } from '../types';
-import { X, PlusCircle, MinusCircle, Sparkles, AlertCircle } from 'lucide-react';
+import { Student, REWARD_PRESETS, PENALTY_PRESETS, UserRole, ActiveOfficer, ClassSettings } from '../types';
+import { X, PlusCircle, MinusCircle, Sparkles, AlertCircle, Crown, Star, Eye, Lock, ShieldAlert } from 'lucide-react';
 
 interface ScoreModalProps {
   student: Student | null;
   onClose: () => void;
   onAddScore: (studentId: string, points: number, reason: string) => void;
+  currentRole: UserRole;
+  onOpenLogin: () => void;
+  activeOfficer?: ActiveOfficer | null;
+  settings?: ClassSettings;
 }
 
 export const ScoreModal: React.FC<ScoreModalProps> = ({
   student,
   onClose,
-  onAddScore
+  onAddScore,
+  currentRole,
+  onOpenLogin,
+  activeOfficer,
+  settings
 }) => {
   const [customPoints, setCustomPoints] = useState<string>('');
   const [customReason, setCustomReason] = useState<string>('');
 
   if (!student) return null;
 
+  const isViewer = currentRole === 'viewer';
+  const isBcs = currentRole === 'bcs';
+  const isBcsBlocked = isBcs && settings?.allowBcsScoring === false;
+  const isOutOfScope = isBcs && settings?.bcsScope === 'own_group' && !!activeOfficer?.group && student.group !== activeOfficer.group;
+
+  const checkScorePermission = (): boolean => {
+    if (isViewer) {
+      alert('Chế độ trình chiếu không được ghi điểm. Vui lòng đăng nhập quyền GVCN hoặc Ban Cán Sự!');
+      onClose();
+      onOpenLogin();
+      return false;
+    }
+    if (isBcsBlocked) {
+      alert('GVCN hiện đang tạm khóa quyền nhập điểm của Cán bộ lớp. Vui lòng liên hệ GVCN!');
+      return false;
+    }
+    if (isOutOfScope) {
+      alert(`GVCN quy định Tổ trưởng chỉ được chấm học sinh trong Tổ ${activeOfficer?.group} phụ trách! Bạn không thể chấm điểm học sinh Tổ ${student.group}.`);
+      return false;
+    }
+    return true;
+  };
+
   const handleApplyPreset = (points: number, title: string) => {
+    if (!checkScorePermission()) return;
     onAddScore(student.id, points, title);
     onClose();
   };
 
   const handleApplyCustom = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!checkScorePermission()) return;
     const pts = parseInt(customPoints);
     if (isNaN(pts)) return;
-    const reason = customReason.trim() || (pts > 0 ? 'Khen thưởng giáo viên' : 'Nhắc nhở nề nếp');
+    const reason = customReason.trim() || (pts > 0 ? 'Khen thưởng thi đua' : 'Nhắc nhở nề nếp');
     onAddScore(student.id, pts, reason);
     onClose();
   };
@@ -69,6 +102,80 @@ export const ScoreModal: React.FC<ScoreModalProps> = ({
         {/* BODY */}
         <div className="p-5 space-y-5 overflow-y-auto custom-scroll flex-1">
           
+          {/* ROLE INDICATOR & OFFICER BADGE */}
+          {currentRole === 'gvcn' && (
+            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Crown className="w-4 h-4 text-amber-600" />
+                <span>Người đánh giá: <b>Giáo Viên Chủ Nhiệm (Toàn quyền)</b></span>
+              </div>
+              <span className="px-2 py-0.5 rounded bg-amber-200 text-[10px] font-black">GVCN</span>
+            </div>
+          )}
+
+          {currentRole === 'bcs' && (
+            <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Star className="w-4 h-4 text-emerald-600" />
+                <span>
+                  Người đánh giá: <b>{activeOfficer ? `${activeOfficer.roleTitle} (${activeOfficer.name})` : 'Ban Cán Sự Lớp'}</b>
+                </span>
+              </div>
+              <span className="px-2 py-0.5 rounded bg-emerald-200 text-[10px] font-black">CÁN BỘ LỚP</span>
+            </div>
+          )}
+
+          {/* WARNINGS IF PERMISSION RESTRICTED */}
+          {isBcsBlocked && (
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>GVCN đã khóa quyền cho điểm của Cán bộ lớp. Bạn không thể ghi điểm.</span>
+            </div>
+          )}
+
+          {isOutOfScope && (
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>GVCN quy định Tổ trưởng chỉ được chấm điểm học sinh trong Tổ {activeOfficer?.group} phụ trách. Học sinh này thuộc Tổ {student.group}.</span>
+            </div>
+          )}
+
+          {currentRole === 'viewer' && (
+            <div className="p-2.5 rounded-xl bg-slate-100 border border-slate-300 text-slate-700 text-xs font-semibold flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Lock className="w-4 h-4 text-slate-500" />
+                <span>Bạn đang ở <b>Chế độ xem</b> (khóa tính năng cho điểm)</span>
+              </div>
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenLogin();
+                }}
+                className="text-indigo-600 hover:text-indigo-800 font-bold underline text-xs cursor-pointer"
+              >
+                Đăng nhập
+              </button>
+            </div>
+          )}
+
+          {currentRole === 'viewer' && (
+            <div className="p-2.5 rounded-xl bg-slate-100 border border-slate-300 text-slate-700 text-xs font-semibold flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Lock className="w-4 h-4 text-slate-500" />
+                <span>Bạn đang ở <b>Chế độ xem</b> (khóa tính năng cho điểm)</span>
+              </div>
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenLogin();
+                }}
+                className="text-indigo-600 hover:text-indigo-800 font-bold underline text-xs cursor-pointer"
+              >
+                Đăng nhập
+              </button>
+            </div>
+          )}
+
           {/* SECTION 1: KHEN THƯỞNG */}
           <div>
             <div className="text-xs font-black uppercase text-emerald-700 tracking-wider mb-2.5 flex items-center gap-1.5">

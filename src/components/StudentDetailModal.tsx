@@ -145,27 +145,55 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Chức vụ trong lớp</label>
-              <input
-                type="text"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                placeholder="Vd: Lớp trưởng, Tổ trưởng..."
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block font-bold text-slate-700">Chức vụ trong lớp</label>
+              <span className="text-[11px] text-slate-400">Chọn nhanh hoặc tự nhập</span>
             </div>
+            <input
+              type="text"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              placeholder="Vd: Lớp trưởng, Tổ trưởng..."
+              className="w-full px-3.5 py-2 rounded-xl border border-slate-200 font-semibold bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm mb-2"
+            />
+            {/* Quick role selection chips */}
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                'Thành viên',
+                'Lớp trưởng',
+                'Lớp phó',
+                'Lớp phó học tập',
+                'Lớp phó lao động',
+                'Lớp phó văn thể',
+                `Tổ trưởng Tổ ${group}`,
+                `Tổ phó Tổ ${group}`,
+                'Thủ quỹ'
+              ].map((suggestedRole) => (
+                <button
+                  key={suggestedRole}
+                  type="button"
+                  onClick={() => setRole(suggestedRole)}
+                  className={`px-2 py-1 rounded-lg text-xs font-semibold transition cursor-pointer border ${
+                    role === suggestedRole
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs font-bold'
+                      : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-indigo-50 hover:text-indigo-700'
+                  }`}
+                >
+                  {suggestedRole}
+                </button>
+              ))}
+            </div>
+          </div>
 
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Điểm thi đua hiện tại</label>
-              <input
-                type="number"
-                value={points}
-                onChange={(e) => setPoints(parseInt(e.target.value) || 0)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold text-center bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Điểm thi đua hiện tại</label>
+            <input
+              type="number"
+              value={points}
+              onChange={(e) => setPoints(parseInt(e.target.value) || 0)}
+              className="w-full px-3.5 py-2 rounded-xl border border-slate-200 font-bold text-center bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-base"
+            />
           </div>
 
           {/* ACTION BUTTONS */}

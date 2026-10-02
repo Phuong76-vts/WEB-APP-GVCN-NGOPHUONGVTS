@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Student, AttendanceRecord, AttendanceStatus, ClassSettings } from '../types';
+import { Student, AttendanceRecord, AttendanceStatus, ClassSettings, UserRole } from '../types';
 import { exportAttendanceToCSV } from '../utils/storage';
 import { 
   UserCheck, 
@@ -10,7 +10,8 @@ import {
   Download, 
   Search, 
   CalendarDays,
-  Filter
+  Filter,
+  Lock
 } from 'lucide-react';
 import { playTingTing, playClick } from '../utils/audio';
 
@@ -21,6 +22,8 @@ interface AttendanceTabProps {
   onMarkAllPresent: () => void;
   settings: ClassSettings;
   soundEnabled: boolean;
+  currentRole: UserRole;
+  onOpenLogin: () => void;
 }
 
 const ATT_STATUS_ORDER: AttendanceStatus[] = ['present', 'late', 'excused', 'unexcused'];
@@ -73,7 +76,9 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
   onUpdateAttendance,
   onMarkAllPresent,
   settings,
-  soundEnabled
+  soundEnabled,
+  currentRole,
+  onOpenLogin
 }) => {
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -100,6 +105,11 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
   });
 
   const handleCycleStatus = (studentId: string) => {
+    if (currentRole === 'viewer') {
+      alert('Chế độ trình chiếu không được sửa điểm danh. Vui lòng đăng nhập quyền Ban Cán Sự hoặc GVCN!');
+      onOpenLogin();
+      return;
+    }
     playClick(soundEnabled);
     const current = attendance[studentId]?.status || 'present';
     const nextIdx = (ATT_STATUS_ORDER.indexOf(current) + 1) % ATT_STATUS_ORDER.length;
@@ -108,6 +118,11 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
   };
 
   const handleAllPresentClick = () => {
+    if (currentRole === 'viewer') {
+      alert('Chế độ trình chiếu không được sửa điểm danh. Vui lòng đăng nhập quyền Ban Cán Sự hoặc GVCN!');
+      onOpenLogin();
+      return;
+    }
     playTingTing(soundEnabled);
     onMarkAllPresent();
   };

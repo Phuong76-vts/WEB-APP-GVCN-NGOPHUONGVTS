@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Student, PointLog, AttendanceRecord, GroupId } from '../types';
+import { Student, PointLog, AttendanceRecord, GroupId, UserRole } from '../types';
 import { 
   Sparkles, 
   RotateCw, 
@@ -25,6 +25,8 @@ interface UtilitiesTabProps {
   onAddScore: (studentId: string, points: number, reason: string) => void;
   onClearLogs: () => void;
   soundEnabled: boolean;
+  currentRole: UserRole;
+  onOpenLogin: () => void;
 }
 
 const TEAM_NAMES = [
@@ -42,7 +44,9 @@ export const UtilitiesTab: React.FC<UtilitiesTabProps> = ({
   pointLogs,
   onAddScore,
   onClearLogs,
-  soundEnabled
+  soundEnabled,
+  currentRole,
+  onOpenLogin
 }) => {
   // --- 1. RANDOM PICKER STATE ---
   const [isSpinning, setIsSpinning] = useState(false);
@@ -233,6 +237,11 @@ export const UtilitiesTab: React.FC<UtilitiesTabProps> = ({
                 <span className="text-xs font-bold text-slate-600">Thưởng nhanh cho bạn:</span>
                 <button
                   onClick={() => {
+                    if (currentRole === 'viewer') {
+                      alert('Chế độ trình chiếu không được ghi điểm. Vui lòng đăng nhập quyền Ban Cán Sự hoặc GVCN!');
+                      onOpenLogin();
+                      return;
+                    }
                     onAddScore(wheelWinner.id, 2, 'Lên bảng phát biểu xuất sắc');
                     playTingTing(soundEnabled);
                   }}
@@ -242,6 +251,11 @@ export const UtilitiesTab: React.FC<UtilitiesTabProps> = ({
                 </button>
                 <button
                   onClick={() => {
+                    if (currentRole === 'viewer') {
+                      alert('Chế độ trình chiếu không được ghi điểm. Vui lòng đăng nhập quyền Ban Cán Sự hoặc GVCN!');
+                      onOpenLogin();
+                      return;
+                    }
                     onAddScore(wheelWinner.id, 5, 'Giải bài tập xuất sắc');
                     playTingTing(soundEnabled);
                   }}
@@ -497,6 +511,11 @@ export const UtilitiesTab: React.FC<UtilitiesTabProps> = ({
           {pointLogs.length > 0 && (
             <button
               onClick={() => {
+                if (currentRole !== 'gvcn') {
+                  alert('Chỉ Giáo Viên Chủ Nhiệm (GVCN) mới có quyền xóa nhật ký điểm thi đua!');
+                  onOpenLogin();
+                  return;
+                }
                 if (confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử ghi điểm?')) {
                   onClearLogs();
                 }
